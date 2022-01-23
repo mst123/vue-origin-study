@@ -33,6 +33,7 @@ import {
 } from 'weex/runtime/recycle-list/render-component-template'
 
 // inline hooks to be invoked on component VNodes during patch
+// TODO 处理vnode children
 const componentVNodeHooks = {
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
@@ -55,9 +56,11 @@ const componentVNodeHooks = {
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
     const options = vnode.componentOptions
     const child = vnode.componentInstance = oldVnode.componentInstance
+    // 更新子组件vnode 执行update
+    // src/core/instance/lifecycle.js
     updateChildComponent(
       child,
-      options.propsData, // updated props
+      options.propsData, // updated props 更新prop
       options.listeners, // updated listeners
       vnode, // new parent vnode
       options.children // new children
@@ -97,7 +100,10 @@ const componentVNodeHooks = {
 }
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
-
+// 三个关键步骤
+// 构造子类构造函数
+// 安装组件钩子函数
+// 实例化 vnode
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
@@ -108,11 +114,13 @@ export function createComponent (
   if (isUndef(Ctor)) {
     return
   }
-
+  // Vue.options._base = Vue
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
   if (isObject(Ctor)) {
+    // vue.extend
+    // 构造一个 Vue 的子类
     Ctor = baseCtor.extend(Ctor)
   }
 
@@ -124,7 +132,6 @@ export function createComponent (
     }
     return
   }
-
   // async component
   let asyncFactory
   if (isUndef(Ctor.cid)) {
@@ -181,10 +188,11 @@ export function createComponent (
       data.slot = slot
     }
   }
-
+  // 安装组件钩子函数
   // install component management hooks onto the placeholder node
   installComponentHooks(data)
 
+  // 实例化vnode **组件的 vnode 是没有 children 的**
   // return a placeholder vnode
   const name = Ctor.options.name || tag
   const vnode = new VNode(

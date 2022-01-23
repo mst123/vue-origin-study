@@ -45,7 +45,7 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   }
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
-// watcher 生成顺序 是 computed user （render在这只是定义了Object defineProperties
+// watcher 生成顺序 是 computed user render（render在这只是定义了Object defineProperties
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
@@ -71,13 +71,17 @@ function initProps (vm: Component, propsOptions: Object) {
   const isRoot = !vm.$parent
   // root instance props should be converted
   if (!isRoot) {
+    // 为了响应式的优化
     toggleObserving(false)
   }
   for (const key in propsOptions) {
+    // propsOptions 标准化后的props
     keys.push(key)
+    // 校验prop类型 并获取prop值
     const value = validateProp(key, propsOptions, propsData, vm)
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
+      // 开发环境 校验prop是否是html保留属性
       const hyphenatedKey = hyphenate(key)
       if (isReservedAttribute(hyphenatedKey) ||
           config.isReservedAttr(hyphenatedKey)) {
@@ -103,6 +107,7 @@ function initProps (vm: Component, propsOptions: Object) {
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
+    // 代理
     if (!(key in vm)) {
       proxy(vm, `_props`, key)
     }
@@ -125,6 +130,7 @@ function initData (vm: Component) {
   }
   // proxy data on instance
   const keys = Object.keys(data)
+  // 有props和methods了
   const props = vm.$options.props
   const methods = vm.$options.methods
   let i = keys.length
@@ -149,6 +155,7 @@ function initData (vm: Component) {
     }
   }
   // observe data
+  // 监测数据的变化
   observe(data, true /* asRootData */)
 }
 
@@ -218,6 +225,7 @@ export function defineComputed (
   const shouldCache = !isServerRendering()
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
+      // 主线逻辑
       ? createComputedGetter(key)
       : createGetterInvoker(userDef)
     sharedPropertyDefinition.set = noop
@@ -240,15 +248,24 @@ export function defineComputed (
   }
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
-
+// 每次触发数据get 都会执行
 function createComputedGetter (key) {
-  return function computedGetter () {
+  return function computedGetter() {
+    // watcher在前边已经生成了
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
+      // watcher updated dirty -> true
+      // TODO 重新访问才会重新求值，什么时候会重新访问呢
+      // 怎么实现依赖变更 重新求值的呢 看不出来 我猜是在render中
       if (watcher.dirty) {
+        // 计算computed值 执行watcher.get 
+        // 触发依赖收集并获得value 
+        // dirty设置false
         watcher.evaluate()
       }
+      // 初始化的时候指向computed watcher 二次触发不会走了
       if (Dep.target) {
+        // dep watcher 互相持有
         watcher.depend()
       }
       return watcher.value
@@ -302,7 +319,7 @@ function initWatch (vm: Component, watch: Object) {
     }
   }
 }
-
+// 创建user watch
 function createWatcher (
   vm: Component,
   expOrFn: string | Function,
@@ -352,14 +369,18 @@ export function stateMixin (Vue: Class<Component>) {
   ): Function {
     const vm: Component = this
     if (isPlainObject(cb)) {
+      // 用户可以调用
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
     options.user = true
     const watcher = new Watcher(vm, expOrFn, cb, options)
+    // 设计deep true 会遍历深层对象，触发getter订阅深层的dep 
+    // 
     if (options.immediate) {
       const info = `callback for immediate watcher "${watcher.expression}"`
       pushTarget()
+      // 执行cb
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
       popTarget()
     }

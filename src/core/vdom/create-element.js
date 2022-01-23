@@ -43,6 +43,11 @@ export function createElement (
   }
   return _createElement(context, tag, data, children, normalizationType)
 }
+// context 表示 VNode 的上下文环境，它是 Component 类型；
+// tag 表示标签，它可以是一个字符串，也可以是一个 Component；
+// data 表示 VNode 的数据，和组件的data可不是一个东西。它是一个 VNodeData 类型，可以在 flow / vnode.js 中找到它的定义
+// children 表示当前 VNode 的子节点，它是任意类型的，它接下来需要被规范为标准的 VNode 数组；    
+// normalizationType 表示子节点规范的类型，类型不同规范的方法也就不一样，它主要是参考 render 函数是编译生成的还是用户手写的
 
 export function _createElement (
   context: Component,
@@ -80,6 +85,7 @@ export function _createElement (
     }
   }
   // support single function children as default scoped slot
+  // 经过对 children 的规范化，children 变成了一个类型为 VNode 的 Array
   if (Array.isArray(children) &&
     typeof children[0] === 'function'
   ) {
@@ -88,11 +94,13 @@ export function _createElement (
     children.length = 0
   }
   if (normalizationType === ALWAYS_NORMALIZE) {
+    // 已经是vnode类型了
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
     children = simpleNormalizeChildren(children)
   }
   let vnode, ns
+  // html  普通vnode
   if (typeof tag === 'string') {
     let Ctor
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
@@ -109,18 +117,19 @@ export function _createElement (
         undefined, undefined, context
       )
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
-      // component
+      // TODO component vnode 组件
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
-      // unknown or unlisted namespaced elements
-      // check at runtime because it may get assigned a namespace when its
-      // parent normalizes children
+      // 未知或未列出的命名空间元素在运行时检查，
+      // 因为当其父元素规范化子元素时，可能会为其分配命名空间
+      // unknown or unlisted namespaced elements check at runtime because it may get assigned a namespace when its parent normalizes children
       vnode = new VNode(
         tag, data, children,
         undefined, undefined, context
       )
     }
   } else {
+    // 创建组件
     // direct component options / constructor
     vnode = createComponent(tag, data, context, children)
   }

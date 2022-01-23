@@ -45,10 +45,11 @@ export class Observer {
     // 在 defineReactive 中 childOb.dep.depend()
     this.vmCount = 0
     // vm._Data.__ob__ 指向这个Observer 
-    // TODO: 但是目前不知道有什么用，目前可以判断此dep不在wather.subs中
+    // TODO: 但是目前不知道有什么用
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
       if (hasProto) {
+        // 大部分现代浏览器都会走到 protoAugment
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
@@ -155,18 +156,27 @@ export function defineReactive (
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
-
+  // 对子对象递归调用observe return 一个ob Observe的实例
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
+      // 组件render的时候，Dep.target会指向组件对应的渲染watcher 
       if (Dep.target) {
+        // 每一个响应式对象 .__ob__.dep 都会添加到 渲染watcher的对应的队列中
+        // 每一个响应式对象 .__ob__.dep 也会存有 渲染watcher
         dep.depend()
+
+        /* if (Dep.target) {
+          // watcher addDep
+          Dep.target.addDep(this)
+        } */
+
         if (childOb) {
           // 只有当元素的value是个对象时，Observer.dep才能真正发挥作用
-          // 也就是当前的watcher 和 子对象的ob的dep属性 互相关联
+          // 也就是当前组件的渲染watcher 和 子对象的ob的dep属性 互相关联
           // 当子对象发生变化时 也能通知到这个watcher
           childOb.dep.depend()
           if (Array.isArray(value)) {
@@ -193,6 +203,7 @@ export function defineReactive (
       } else {
         val = newVal
       }
+      // 如果设置了深层次的data 会再次进行observe
       childOb = !shallow && observe(newVal)
       dep.notify()
     }

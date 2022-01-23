@@ -55,6 +55,7 @@ export default class Watcher {
     if (isRenderWatcher) {
       vm._watcher = this
     }
+    // 所有的watcher 都挂载到vm的_watchers中
     vm._watchers.push(this)
     // options
     if (options) {
@@ -78,6 +79,7 @@ export default class Watcher {
       ? expOrFn.toString()
       : ''
     // parse expression for getter
+
     // this.getter 是 回调函数
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
@@ -93,7 +95,7 @@ export default class Watcher {
         )
       }
     }
-    // lazy 是computed属性
+    // lazy 是computed属性 不会立刻求值
     // 正常初始化 会走 this.get
     this.value = this.lazy
       ? undefined
@@ -114,6 +116,10 @@ export default class Watcher {
     const vm = this.vm
     try {
       // render 执行回调函数 读取数据getter，进行依赖收集，创建虚拟dom，挂载el 
+      // 实际上就是执行 vm._update(vm._render(), hydrating)
+
+      // user watcher 和 computed watcher 实际上是执行 对应的计算或者监听函数
+      // 所有类型的依赖收集都在这里完成
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -125,10 +131,10 @@ export default class Watcher {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
       if (this.deep) {
-        // 深度监听
+        // 深度监听 订阅深层对象的dep
         traverse(value)
       }
-      // 此时 当前watch的依赖收集已经完成了
+      // 此时 render 结束 当前watch的依赖收集已经完成了
       popTarget()
       // 出栈 重新赋值 Dep.target 时间倒流
       /* function popTarget () {
@@ -145,6 +151,7 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
+    // 保证同一数据不会被添加多次
     if (!this.newDepIds.has(id)) {
       // watcher 添加 dep
       this.newDepIds.add(id)
@@ -159,6 +166,7 @@ export default class Watcher {
   /**
    * Clean up for dependency collection.
    */
+  // TODO Vue 是数据驱动的，所以每次数据变化都会重新 render
   cleanupDeps () {
     let i = this.deps.length
     while (i--) {
@@ -181,9 +189,12 @@ export default class Watcher {
    * Subscriber interface.
    * Will be called when a dependency changes.
    */
+  // 更新
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
+      // computed watcher 
+      // 只有下次访问时才会求值
       this.dirty = true
     } else if (this.sync) {
       this.run()
@@ -198,6 +209,8 @@ export default class Watcher {
    */
   run () {
     if (this.active) {
+      // 重新触发getter
+      // 对于渲染watcher来说，重新执行 render 的过程，但它和首次渲染有所不同
       const value = this.get()
       if (
         value !== this.value ||
@@ -207,7 +220,8 @@ export default class Watcher {
         isObject(value) ||
         this.deep
       ) {
-        // set new value
+        // 如果满足新旧值不等、新值是对象类型、deep 模式任何一个条件
+        // set new value watcher的value
         const oldValue = this.value
         this.value = value
         if (this.user) {
@@ -224,6 +238,7 @@ export default class Watcher {
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
    */
+  // lazy watcher computed
   evaluate () {
     this.value = this.get()
     this.dirty = false

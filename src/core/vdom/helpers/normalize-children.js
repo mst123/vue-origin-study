@@ -28,7 +28,8 @@ export function simpleNormalizeChildren (children: any) {
 // e.g. <template>, <slot>, v-for, or when the children is provided by user
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
-export function normalizeChildren (children: any): ?Array<VNode> {
+export function normalizeChildren(children: any): ?Array<VNode> {
+  // 是否是原始类型
   return isPrimitive(children)
     ? [createTextVNode(children)]
     : Array.isArray(children)

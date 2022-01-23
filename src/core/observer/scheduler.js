@@ -81,6 +81,11 @@ function flushSchedulerQueue () {
   //    user watchers are created before the render watcher)
   // 3. If a component is destroyed during a parent component's watcher run,
   //    its watchers can be skipped.
+
+  // 1.组件的更新由父到子；因为父组件的创建过程是先于子的，所以 watcher 的创建也是先父后子，执行顺序也应该保持先父后子。
+  // 2.用户的自定义 watcher 要优先于渲染 watcher 执行；因为用户自定义 watcher 是在渲染 watcher 之前创建的。
+  // 3.如果一个组件在父组件的 watcher 执行期间被销毁，那么它对应的 watcher 执行都可以被跳过，所以父组件的 watcher 应该先执行。
+  
   // 按watcher ID 由小到大排列
   queue.sort((a, b) => a.id - b.id)
 
@@ -115,9 +120,11 @@ function flushSchedulerQueue () {
   const activatedQueue = activatedChildren.slice()
   const updatedQueue = queue.slice()
 
+  // 把这些控制流程状态的一些变量恢复到初始值，把 watcher 队列清空。
   resetSchedulerState()
 
   // call component updated and activated hooks
+  // 调用组件updated hooks
   callActivatedHooks(activatedQueue)
   callUpdatedHooks(updatedQueue)
 
@@ -168,7 +175,7 @@ export function queueWatcher (watcher: Watcher) {
     has[id] = true
     if (!flushing) {
       queue.push(watcher)
-    } else {
+    } else { // watcher update中可能会有新watcher添加进来 走这个逻辑
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
       let i = queue.length - 1
@@ -178,6 +185,8 @@ export function queueWatcher (watcher: Watcher) {
       queue.splice(i + 1, 0, watcher)
     }
     // queue the flush
+    // 保证 nextTick(flushSchedulerQueue) 只执行一次
+    // 队列中的watcher还是会不停的添加的
     if (!waiting) {
       waiting = true
 

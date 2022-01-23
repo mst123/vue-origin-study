@@ -35,7 +35,7 @@ export default class Dep {
       Dep.target.addDep(this)
     }
   }
-
+  // 通知更新
   notify () {
     // stabilize the subscriber list first
     const subs = this.subs.slice()
@@ -46,6 +46,7 @@ export default class Dep {
       subs.sort((a, b) => a.id - b.id)
     }
     for (let i = 0, l = subs.length; i < l; i++) {
+      // 通知与该响应式对象相关联的watcher
       subs[i].update()
     }
   }
@@ -54,9 +55,12 @@ export default class Dep {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
+
+// TODO 在同一时间只能有一个全局的 Watcher 被计算
 Dep.target = null
 const targetStack = []
 
+// 关于Dep.target的重要函数
 export function pushTarget (target: ?Watcher) {
   targetStack.push(target)
   Dep.target = target

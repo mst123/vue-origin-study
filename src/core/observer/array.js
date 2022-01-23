@@ -37,6 +37,7 @@ methodsToPatch.forEach(function (method) {
         inserted = args.slice(2)
         break
     }
+    // 把新添加的值变成一个响应式对象
     if (inserted) ob.observeArray(inserted)
     // notify change
     ob.dep.notify()

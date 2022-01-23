@@ -35,6 +35,7 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
+      // 有对props标准化的过程
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -48,6 +49,7 @@ export function initMixin (Vue: Class<Component>) {
       vm._renderProxy = vm
     }
     // expose real self
+    // 生命周期
     vm._self = vm
     initLifecycle(vm)
     initEvents(vm)
@@ -66,6 +68,8 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     if (vm.$options.el) {
+      // 实际调用和mountComponent  
+      // src/core/instance/lifecycle.js
       vm.$mount(vm.$options.el)
     }
   }

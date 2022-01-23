@@ -45,6 +45,7 @@ export function initExtend (Vue: GlobalAPI) {
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
+    // 初始化props和computed
     if (Sub.options.props) {
       initProps(Sub)
     }
@@ -73,7 +74,7 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.superOptions = Super.options
     Sub.extendOptions = extendOptions
     Sub.sealedOptions = extend({}, Sub.options)
-
+    // 缓存构造器
     // cache constructor
     cachedCtors[SuperId] = Sub
     return Sub
